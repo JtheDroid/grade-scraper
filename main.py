@@ -8,10 +8,13 @@ import json
 
 from random import random
 
-filename = "data.json"
-filename_login = "login.json"
+setting_username = "username"
+setting_password = "password"
+setting_webdriver_url = "remote_webdriver_url"
+
+filename_data = "data.json"
+filename_settings = "settings.json"
 random_time = 0.5
-selenium_chrome_url = "http://10.0.0.10:4444/wd/hub"
 
 
 def load_page(driver: webdriver.Remote):
@@ -19,14 +22,14 @@ def load_page(driver: webdriver.Remote):
     time.sleep(random() * random_time)
 
 
-def login(driver: webdriver.Remote, login_data: dict):
+def login(driver: webdriver.Remote, settings: dict):
     input_elements = driver.find_elements_by_class_name("input_login")
     for input_element in input_elements:
         element_type = input_element.get_attribute("type")
         if element_type == "text":
-            input_element.send_keys(login_data["username"])
+            input_element.send_keys(settings["username"])
         elif element_type == "password":
-            input_element.send_keys(login_data["password"])
+            input_element.send_keys(settings["password"])
     submit_button = driver.find_element_by_class_name("submit")
     time.sleep(random() * random_time)
     submit_button.click()
@@ -95,7 +98,7 @@ def get_grades(driver: webdriver.Remote):
 
 def load_grades():
     try:
-        with open(filename, "r") as file:
+        with open(filename_data, "r") as file:
             grades = json.load(file)
             print(f"loaded: {grades}")
             return grades
@@ -106,7 +109,7 @@ def load_grades():
 
 def save_grades(grades):
     try:
-        with open(filename, "w") as file:
+        with open(filename_data, "w") as file:
             json.dump(grades, file)
             print(f"saved: {grades}")
             return grades
@@ -123,18 +126,14 @@ def main():
     grades = load_grades()
     grades_new = []
     try:
-        driver = webdriver.Remote(selenium_chrome_url, DesiredCapabilities.CHROME)
+        with open(filename_settings, "r") as file:
+            settings = json.load(file)
+            if not (settings[setting_username] and settings[setting_password] and settings[setting_webdriver_url]):
+                raise Exception(f"settings are missing, please edit {filename_settings}")
+        driver = webdriver.Remote(settings[setting_webdriver_url], DesiredCapabilities.CHROME)
         load_page(driver)
         if not logged_in(driver):
-            try:
-                with open(filename_login, "r") as file:
-                    login_data = json.load(file)
-                    login(driver, login_data)
-            except FileNotFoundError:
-                print(f"file not found: {filename_login}, please provide login data")
-                with open(filename_login, "w") as file:
-                    json.dump({"username": "", "password": ""}, file)
-
+            login(driver, settings)
         if logged_in(driver):
             go_to_grades(driver)
             grades_new = get_grades(driver)
@@ -149,8 +148,15 @@ def main():
 
     except WebDriverException:
         print("web driver exception")
+    except FileNotFoundError:
+        print(f"file not found: {filename_settings}, please provide settings")
+        with open(filename_settings, "w") as file:
+            json.dump({setting_username: "",
+                       setting_password: "",
+                       setting_webdriver_url: "http://127.0.0.1:4444/wd/hub"}, file)
     finally:
-        driver.close()
+        if driver:
+            driver.close()
     return grades_new
 
 
