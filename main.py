@@ -11,10 +11,11 @@ from random import random
 setting_username = "username"
 setting_password = "password"
 setting_webdriver_url = "remote_webdriver_url"
+setting_random_time = "random_time"
 
 filename_data = "data.json"
 filename_settings = "settings.json"
-random_time = 0.5
+random_time = 1
 
 
 def load_page(driver: webdriver.Remote):
@@ -130,6 +131,8 @@ def main():
             settings = json.load(file)
             if not (settings[setting_username] and settings[setting_password] and settings[setting_webdriver_url]):
                 raise Exception(f"settings are missing, please edit {filename_settings}")
+            if setting_random_time in settings:
+                random_time = settings[setting_random_time]
         driver = webdriver.Remote(settings[setting_webdriver_url], DesiredCapabilities.CHROME)
         load_page(driver)
         if not logged_in(driver):
@@ -153,7 +156,8 @@ def main():
         with open(filename_settings, "w") as file:
             json.dump({setting_username: "",
                        setting_password: "",
-                       setting_webdriver_url: "http://127.0.0.1:4444/wd/hub"}, file)
+                       setting_webdriver_url: "http://127.0.0.1:4444/wd/hub",
+                       setting_random_time: random_time}, file)
     finally:
         if driver:
             driver.close()
