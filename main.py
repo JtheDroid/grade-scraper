@@ -5,13 +5,18 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 import time
 from datetime import datetime
 import json
-
 from random import random
+
+from discord_webhook import DiscordWebhook
 
 setting_username = "username"
 setting_password = "password"
 setting_webdriver_url = "remote_webdriver_url"
 setting_random_time = "random_time"
+setting_webhook = "discord_webhook"
+setting_webhook_url = "url"
+setting_webhook_name = "name"
+setting_webhook_avatar = "avatar_url"
 
 filename_data = "data.json"
 filename_settings = "settings.json"
@@ -122,6 +127,19 @@ def new_entries(old, new):
     return [entry for entry in new if entry not in old]
 
 
+def handle_diff(entries: list, settings: dict):
+    if not entries:
+        return
+    text_list = [f"**{entry['text']}**" for entry in entries]
+    text = f"Aktualisiert/Neu:\n\n"
+    text += ',\n'.join(text_list)
+    webhook_settings = settings[setting_webhook]
+    webhook = DiscordWebhook(webhook_settings[setting_webhook_url],
+                             name=webhook_settings[setting_webhook_name],
+                             avatar_url=webhook_settings[setting_webhook_avatar])
+    webhook.webhook_post_embed("POS", text, "https://pos.hawk-hhg.de")
+
+
 def main():
     driver = None
     grades = load_grades()
@@ -129,9 +147,11 @@ def main():
     try:
         with open(filename_settings, "r") as file:
             settings = json.load(file)
-            if not (settings[setting_username] and settings[setting_password] and settings[setting_webdriver_url]):
+            if not (settings[setting_username] and settings[setting_password]
+                    and settings[setting_webdriver_url] and setting_webhook in settings):
                 raise Exception(f"settings are missing, please edit {filename_settings}")
             if setting_random_time in settings:
+                global random_time
                 random_time = settings[setting_random_time]
         driver = webdriver.Remote(settings[setting_webdriver_url], DesiredCapabilities.CHROME)
         load_page(driver)
@@ -143,6 +163,7 @@ def main():
             grades_diff = new_entries(grades, grades_new)
             print(f"diff: {grades_diff}")
             save_grades(grades_new)
+            handle_diff(grades_diff, settings)
             print(grades)
             logout(driver)
         else:
