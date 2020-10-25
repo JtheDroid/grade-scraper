@@ -74,10 +74,10 @@ def go_to_grades(driver: webdriver.Remote):
     time.sleep(random() * random_time)
 
 
-def row_to_data(row: WebElement):
+def row_to_data(row: WebElement) -> dict:
     cols = row.find_elements_by_tag_name("td")
     if len(cols) == 0:
-        return None
+        return {}
     grade = cols[3].text.strip()
     nr = int(cols[0].text.strip())
     data = {
@@ -94,7 +94,7 @@ def row_to_data(row: WebElement):
     return data
 
 
-def get_grades(driver: webdriver.Remote):
+def get_grades(driver: webdriver.Remote) -> list:
     tbody = driver.find_elements_by_tag_name("tbody")[1]
     rows = tbody.find_elements_by_tag_name("tr")
     entries = [row_to_data(row) for row in rows]
@@ -102,7 +102,7 @@ def get_grades(driver: webdriver.Remote):
     return entries
 
 
-def load_grades():
+def load_grades() -> list:
     try:
         with open(filename_data, "r") as file:
             grades = json.load(file)
@@ -123,7 +123,7 @@ def save_grades(grades):
         print("error saving")
 
 
-def new_entries(old, new):
+def new_entries(old: list, new: list) -> list:
     return [entry for entry in new if entry not in old]
 
 
@@ -134,9 +134,7 @@ def handle_diff(entries: list, settings: dict):
     text = f"Aktualisiert/Neu:\n\n"
     text += ',\n'.join(text_list)
     webhook_settings = settings[setting_webhook]
-    webhook = DiscordWebhook(webhook_settings[setting_webhook_url],
-                             name=webhook_settings[setting_webhook_name],
-                             avatar_url=webhook_settings[setting_webhook_avatar])
+    webhook = DiscordWebhook(webhook_settings)
     webhook.webhook_post_embed("POS", text, "https://pos.hawk-hhg.de")
 
 

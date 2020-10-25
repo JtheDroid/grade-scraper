@@ -1,2 +1,3 @@
 selenium
 requests
+-e git+https://github.com/JtheDroid/discord-webhook.git@main#egg=discord-webhook
