@@ -106,7 +106,7 @@ def load_grades() -> list:
     try:
         with open(filename_data, "r") as file:
             grades = json.load(file)
-            print(f"loaded: {grades}")
+            print(f"loaded: {len(grades)} entries")
             return grades
     except FileNotFoundError:
         print("file not found")
@@ -117,7 +117,7 @@ def save_grades(grades):
     try:
         with open(filename_data, "w") as file:
             json.dump(grades, file)
-            print(f"saved: {grades}")
+            print(f"saved: {len(grades)} entries")
             return grades
     except IOError:
         print("error saving")
@@ -159,10 +159,10 @@ def main():
             go_to_grades(driver)
             grades_new = get_grades(driver)
             grades_diff = new_entries(grades, grades_new)
-            print(f"diff: {grades_diff}")
+            print(f"diff: {len(grades_diff)} entries")
             save_grades(grades_new)
             handle_diff(grades_diff, settings)
-            print(grades)
+            print(f"{len(grades)} entries")
             logout(driver)
         else:
             print("couldn't log in")
