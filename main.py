@@ -152,6 +152,7 @@ def main():
                 global random_time
                 random_time = settings[setting_random_time]
         driver = webdriver.Remote(settings[setting_webdriver_url], DesiredCapabilities.CHROME)
+        driver.implicitly_wait(1)
         load_page(driver)
         if not logged_in(driver):
             login(driver, settings)
@@ -161,7 +162,10 @@ def main():
             grades_diff = new_entries(grades, grades_new)
             print(f"diff: {len(grades_diff)} entries")
             save_grades(grades_new)
-            handle_diff(grades_diff, settings)
+            if grades:
+                handle_diff(grades_diff, settings)
+            else:
+                print("first run, not handling new entries")
             print(f"{len(grades)} entries")
             logout(driver)
         else:
@@ -176,7 +180,10 @@ def main():
             json.dump({setting_username: "",
                        setting_password: "",
                        setting_webdriver_url: "http://127.0.0.1:4444/wd/hub",
-                       setting_random_time: random_time}, file)
+                       setting_random_time: random_time,
+                       setting_webhook: {setting_webhook_url: "",
+                                         setting_webhook_name: "",
+                                         setting_webhook_avatar: ""}}, file)
     finally:
         if driver:
             driver.close()
