@@ -54,23 +54,23 @@ def logged_in(driver: webdriver.Remote) -> bool:
     element = driver.find_element_by_class_name("divloginstatus")
     elements = element.find_elements_by_class_name("links3")
     is_logged_in = len(elements) > 5
-    print(f"currently logged {'in' if is_logged_in else 'out'}")
+    print(f"logged {'in' if is_logged_in else 'out'}")
     return is_logged_in
 
 
 def go_to_grades(driver: webdriver.Remote):
-    print(driver.current_url)
+    # print(driver.current_url)
     selector = "#makronavigation > ul > li:nth-child(2) > a"
     driver.find_element_by_css_selector(selector).click()
-    print(driver.current_url)
+    # print(driver.current_url)
     time.sleep(random() * random_time)
     selector = "#wrapper > div.divcontent > div.content_max_portal_qis > div > form > div > ul > li:nth-child(5) > a"
     driver.find_element_by_css_selector(selector).click()
-    print(driver.current_url)
+    # print(driver.current_url)
     time.sleep(random() * random_time)
     selector = "#wrapper > div.divcontent > div.content > form > ul > li > a:nth-child(3)"
     driver.find_element_by_css_selector(selector).click()
-    print(driver.current_url)
+    # print(driver.current_url)
     time.sleep(random() * random_time)
 
 
@@ -106,7 +106,7 @@ def load_grades() -> list:
     try:
         with open(filename_data, "r") as file:
             grades = json.load(file)
-            print(f"loaded: {len(grades)} entries")
+            # print(f"loaded: {len(grades)} entries")
             return grades
     except FileNotFoundError:
         print("file not found")
@@ -117,7 +117,7 @@ def save_grades(grades):
     try:
         with open(filename_data, "w") as file:
             json.dump(grades, file)
-            print(f"saved: {len(grades)} entries")
+            # print(f"saved: {len(grades)} entries")
             return grades
     except IOError:
         print("error saving")
@@ -160,20 +160,19 @@ def main():
             go_to_grades(driver)
             grades_new = get_grades(driver)
             grades_diff = new_entries(grades, grades_new)
-            print(f"diff: {len(grades_diff)} entries")
             save_grades(grades_new)
             if grades:
                 handle_diff(grades_diff, settings)
             else:
                 print("first run, not handling new entries")
-            print(f"{len(grades)} entries")
+            print(f"entries: loaded {len(grades)}, saved {len(grades_new)}, {len(grades_diff)} changes")
             logout(driver)
         else:
             print("couldn't log in")
         logged_in(driver)
 
-    except WebDriverException:
-        print("web driver exception")
+    except WebDriverException as wde:
+        print(f"web driver exception:\n{wde}")
     except FileNotFoundError:
         print(f"file not found: {filename_settings}, please provide settings")
         with open(filename_settings, "w") as file:
