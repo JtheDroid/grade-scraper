@@ -9,6 +9,7 @@ from random import random
 
 from discord_webhook import DiscordWebhook
 
+setting_users = "users"
 setting_username = "username"
 setting_password = "password"
 setting_webdriver_url = "remote_webdriver_url"
@@ -18,7 +19,7 @@ setting_webhook_url = "url"
 setting_webhook_name = "name"
 setting_webhook_avatar = "avatar_url"
 
-filename_data = "data.json"
+filename_data = "data_{}.json"
 filename_settings = "settings.json"
 random_time = 1
 
@@ -28,14 +29,14 @@ def load_page(driver: webdriver.Remote):
     time.sleep(random() * random_time)
 
 
-def login(driver: webdriver.Remote, settings: dict):
+def login(driver: webdriver.Remote, user: dict):
     input_elements = driver.find_elements_by_class_name("input_login")
     for input_element in input_elements:
         element_type = input_element.get_attribute("type")
         if element_type == "text":
-            input_element.send_keys(settings["username"])
+            input_element.send_keys(user[setting_username])
         elif element_type == "password":
-            input_element.send_keys(settings["password"])
+            input_element.send_keys(user[setting_password])
     submit_button = driver.find_element_by_class_name("submit")
     time.sleep(random() * random_time)
     submit_button.click()
@@ -102,9 +103,9 @@ def get_grades(driver: webdriver.Remote) -> list:
     return entries
 
 
-def load_grades() -> list:
+def load_grades(username: str) -> list:
     try:
-        with open(filename_data, "r") as file:
+        with open(filename_data.format(username), "r") as file:
             grades = json.load(file)
             # print(f"loaded: {len(grades)} entries")
             return grades
@@ -113,9 +114,9 @@ def load_grades() -> list:
     return []
 
 
-def save_grades(grades):
+def save_grades(grades, username: str):
     try:
-        with open(filename_data, "w") as file:
+        with open(filename_data.format(username), "w") as file:
             json.dump(grades, file)
             # print(f"saved: {len(grades)} entries")
             return grades
@@ -140,44 +141,57 @@ def handle_diff(entries: list, settings: dict):
 
 def main():
     driver = None
-    grades = load_grades()
     grades_new = []
     try:
         with open(filename_settings, "r") as file:
             settings = json.load(file)
-            if not (settings[setting_username] and settings[setting_password]
-                    and settings[setting_webdriver_url] and setting_webhook in settings):
+            if not (setting_users in settings and settings[setting_webdriver_url] and setting_webhook in settings):
                 raise Exception(f"settings are missing, please edit {filename_settings}")
             if setting_random_time in settings:
                 global random_time
                 random_time = settings[setting_random_time]
-        driver = webdriver.Remote(settings[setting_webdriver_url], DesiredCapabilities.CHROME)
-        driver.implicitly_wait(1)
-        load_page(driver)
-        if not logged_in(driver):
-            login(driver, settings)
-        if logged_in(driver):
-            go_to_grades(driver)
-            grades_new = get_grades(driver)
-            grades_diff = new_entries(grades, grades_new)
-            save_grades(grades_new)
-            if grades:
-                handle_diff(grades_diff, settings)
+        for user in settings[setting_users]:
+            grades = load_grades(user[setting_username])
+            driver = webdriver.Remote(settings[setting_webdriver_url], DesiredCapabilities.CHROME)
+            driver.implicitly_wait(1)
+            load_page(driver)
+            if not logged_in(driver):
+                login(driver, user)
             else:
-                print("first run, not handling new entries")
-            print(f"entries: loaded {len(grades)}, saved {len(grades_new)}, {len(grades_diff)} changes")
-            logout(driver)
-        else:
-            print("couldn't log in")
-        logged_in(driver)
-
+                break
+            if logged_in(driver):
+                go_to_grades(driver)
+                grades_new = get_grades(driver)
+                grades_diff = new_entries(grades, grades_new)
+                save_grades(grades_new, user[setting_username])
+                if grades:
+                    handle_diff(grades_diff, settings)
+                else:
+                    print("first run, not handling new entries")
+                print(f"entries: loaded {len(grades)}, saved {len(grades_new)}, {len(grades_diff)} changes")
+                logout(driver)
+                logout_tries = 1
+                while logged_in(driver):
+                    logout(driver)
+                    logout_tries += 1
+                    time.sleep(2)
+                    if logout_tries > 5:
+                        driver.quit()
+                        driver = None
+                        continue
+            else:
+                print("couldn't log in")
+            logged_in(driver)
+            driver.quit()
+            driver = None
+            time.sleep(2)
     except WebDriverException as wde:
         print(f"web driver exception:\n{wde}")
     except FileNotFoundError:
         print(f"file not found: {filename_settings}, please provide settings")
         with open(filename_settings, "w") as file:
-            json.dump({setting_username: "",
-                       setting_password: "",
+            json.dump({setting_users: [{setting_username: "",
+                                        setting_password: ""}],
                        setting_webdriver_url: "http://127.0.0.1:4444/wd/hub",
                        setting_random_time: random_time,
                        setting_webhook: {setting_webhook_url: "",
