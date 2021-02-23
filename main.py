@@ -128,7 +128,7 @@ def new_entries(old: list, new: list) -> list:
     return [entry for entry in new if entry not in old]
 
 
-def handle_diff(entries: list, settings: dict):
+def handle_diff(entries: list, settings: dict, username: str = None):
     if not entries:
         return
     text_list = [f"**{entry['text']}**" for entry in entries]
@@ -136,7 +136,7 @@ def handle_diff(entries: list, settings: dict):
     text += ',\n'.join(text_list)
     webhook_settings = settings[setting_webhook]
     webhook = DiscordWebhook(webhook_settings)
-    webhook.webhook_post_embed("POS", text, "https://pos.hawk-hhg.de")
+    webhook.webhook_post_embed("POS", text, "https://pos.hawk-hhg.de", username)
 
 
 def main():
@@ -165,7 +165,7 @@ def main():
                 grades_diff = new_entries(grades, grades_new)
                 save_grades(grades_new, user[setting_username])
                 if grades:
-                    handle_diff(grades_diff, settings)
+                    handle_diff(grades_diff, settings, user[setting_username])
                 else:
                     print("first run, not handling new entries")
                 print(f"entries: loaded {len(grades)}, saved {len(grades_new)}, {len(grades_diff)} changes")
