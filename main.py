@@ -12,6 +12,7 @@ from discord_webhook import DiscordWebhook
 setting_users = "users"
 setting_username = "username"
 setting_password = "password"
+setting_discord_id = "discord_id"
 setting_webdriver_url = "remote_webdriver_url"
 setting_random_time = "random_time"
 setting_webhook = "discord_webhook"
@@ -128,15 +129,15 @@ def new_entries(old: list, new: list) -> list:
     return [entry for entry in new if entry not in old]
 
 
-def handle_diff(entries: list, settings: dict, username: str = None):
+def handle_diff(entries: list, settings: dict, username: str = None, discord_id: str = None):
     if not entries:
         return
     text_list = [f"**{entry['text']}**" for entry in entries]
-    text = f"Aktualisiert/Neu:\n\n"
-    text += ',\n'.join(text_list)
+    text = "Aktualisiert/Neu:\n\n{}".format(',\n'.join(text_list))
+    mention = f"<@{discord_id}>" if discord_id else None
     webhook_settings = settings[setting_webhook]
     webhook = DiscordWebhook(webhook_settings)
-    webhook.webhook_post_embed("POS", text, "https://pos.hawk-hhg.de", username)
+    webhook.webhook_post_embed("POS", text, url="https://pos.hawk-hhg.de", footer=username, content=mention)
 
 
 def main():
@@ -165,7 +166,8 @@ def main():
                 grades_diff = new_entries(grades, grades_new)
                 save_grades(grades_new, user[setting_username])
                 if grades:
-                    handle_diff(grades_diff, settings, user[setting_username])
+                    handle_diff(grades_diff, settings, user[setting_username],
+                                user[setting_discord_id] if setting_discord_id in user else None)
                 else:
                     print("first run, not handling new entries")
                 print(f"entries: loaded {len(grades)}, saved {len(grades_new)}, {len(grades_diff)} changes")
