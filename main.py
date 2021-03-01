@@ -6,6 +6,7 @@ import time
 from datetime import datetime
 import json
 from random import random
+from base64 import b64decode
 
 from discord_webhook import DiscordWebhook
 
@@ -37,7 +38,7 @@ def login(driver: webdriver.Remote, user: dict):
         if element_type == "text":
             input_element.send_keys(user[setting_username])
         elif element_type == "password":
-            input_element.send_keys(user[setting_password])
+            input_element.send_keys(b64decode(user[setting_password]).decode())
     submit_button = driver.find_element_by_class_name("submit")
     time.sleep(random() * random_time)
     submit_button.click()
@@ -133,7 +134,7 @@ def handle_diff(entries: list, settings: dict, username: str = None, discord_id:
     if not entries:
         return
     text_list = [f"**{entry['text']}**" for entry in entries]
-    text = "Aktualisiert/Neu:\n\n{}".format(',\n'.join(text_list))
+    text = "Updates:\n{}".format(',\n'.join(text_list))
     mention = f"<@{discord_id}>" if discord_id else None
     webhook_settings = settings[setting_webhook]
     webhook = DiscordWebhook(webhook_settings)
