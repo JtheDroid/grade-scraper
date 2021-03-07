@@ -165,57 +165,56 @@ def create_settings():
 
 
 def main():
-    driver = None
-    grades_new = []
     try:
         settings = load_settings()
         for user in settings[setting_users]:
-            if settings[setting_base64]:
-                user[setting_password] = b64decode(user[setting_password]).decode()
-            grades = load_grades(user[setting_username])
-            driver = webdriver.Remote(settings[setting_webdriver_url], DesiredCapabilities.CHROME)
-            driver.implicitly_wait(1)
-            load_page(driver)
-            if not logged_in(driver):
-                login(driver, user)
-            else:
-                break
-            if logged_in(driver):
-                go_to_grades(driver)
-                grades_new = get_grades(driver)
-                grades_diff = new_entries(grades, grades_new)
-                save_grades(grades_new, user[setting_username])
-                if grades:
-                    handle_diff(grades_diff, settings, user[setting_username],
-                                user[setting_discord_id] if setting_discord_id in user else None)
-                else:
-                    print("first run, not handling new entries")
-                print(f"entries: loaded {len(grades)}, saved {len(grades_new)}, {len(grades_diff)} changes")
-                logout(driver)
-                logout_tries = 1
-                while logged_in(driver):
-                    logout(driver)
-                    logout_tries += 1
-                    time.sleep(2)
-                    if logout_tries > 5:
-                        driver.quit()
-                        driver = None
-                        continue
-            else:
-                print("couldn't log in")
-            logged_in(driver)
-            driver.quit()
             driver = None
-            time.sleep(2)
-    except WebDriverException as wde:
-        print(f"web driver exception:\n{wde}")
+            try:
+                if settings[setting_base64]:
+                    user[setting_password] = b64decode(user[setting_password]).decode()
+                grades = load_grades(user[setting_username])
+                driver = webdriver.Remote(settings[setting_webdriver_url], DesiredCapabilities.CHROME)
+                driver.implicitly_wait(1)
+                load_page(driver)
+                if not logged_in(driver):
+                    login(driver, user)
+                else:
+                    break
+                if logged_in(driver):
+                    go_to_grades(driver)
+                    grades_new = get_grades(driver)
+                    grades_diff = new_entries(grades, grades_new)
+                    save_grades(grades_new, user[setting_username])
+                    if grades:
+                        handle_diff(grades_diff, settings, user[setting_username],
+                                    user[setting_discord_id] if setting_discord_id in user else None)
+                    else:
+                        print("first run, not handling new entries")
+                    print(f"entries: loaded {len(grades)}, saved {len(grades_new)}, {len(grades_diff)} changes")
+                    logout(driver)
+                    logout_tries = 1
+                    while logout_tries <= 5 and logged_in(driver):
+                        logout(driver)
+                        logout_tries += 1
+                        time.sleep(2)
+                else:
+                    print("couldn't log in")
+                logged_in(driver)
+                driver.delete_all_cookies()
+                driver.quit()
+                driver = None
+                time.sleep(2)
+            except WebDriverException as wde:
+                print(f"web driver exception:\n{wde}")
+            finally:
+                if driver:
+                    try:
+                        driver.quit()
+                    except WebDriverException:
+                        pass
     except FileNotFoundError:
         create_settings()
         print(f"please provide settings in {filename_settings}")
-    finally:
-        if driver:
-            driver.close()
-    return grades_new
 
 
 if __name__ == '__main__':
