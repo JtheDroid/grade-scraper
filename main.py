@@ -15,7 +15,7 @@ setting_username = "username"
 setting_password = "password"
 setting_discord_id = "discord_id"
 setting_webdriver_url = "remote_webdriver_url"
-setting_random_time = "random_time"
+setting_random_time = "random_wait_time"
 setting_webhook = "discord_webhook"
 setting_webhook_url = "url"
 setting_webhook_name = "name"
@@ -115,8 +115,7 @@ def load_grades(username: str) -> list:
 def save_grades(grades, username: str):
     try:
         with open(filename_data.format(username), "w") as file:
-            json.dump(grades, file)
-            # print(f"saved: {len(grades)} entries")
+            json.dump(grades, fp=file, separators=(',', ':'))
             return grades
     except IOError:
         print("error saving")
@@ -137,17 +136,39 @@ def handle_diff(entries: list, settings: dict, username: str = None, discord_id:
     webhook.webhook_post_embed("POS", text, url="https://pos.hawk-hhg.de", footer=username, content=mention)
 
 
+def load_settings() -> dict:
+    with open(filename_settings, "r") as file:
+        settings = json.load(file)
+        if not (setting_users in settings and settings[setting_webdriver_url] and setting_webhook in settings):
+            raise Exception(f"settings are missing, please edit {filename_settings}")
+        if setting_random_time in settings:
+            global random_time
+            random_time = settings[setting_random_time]
+        if setting_base64 not in settings:
+            settings[setting_base64] = False
+        return settings
+
+
+def create_settings():
+    with open(filename_settings, "w") as file:
+        json.dump({
+            setting_users: [{setting_username: "",
+                             setting_password: "",
+                             setting_discord_id: ""}],
+            setting_webdriver_url: "http://127.0.0.1:4444/wd/hub",
+            setting_random_time: random_time,
+            setting_webhook: {setting_webhook_url: "",
+                              setting_webhook_name: "",
+                              setting_webhook_avatar: ""},
+            setting_base64: False
+        }, fp=file, indent=2)
+
+
 def main():
     driver = None
     grades_new = []
     try:
-        with open(filename_settings, "r") as file:
-            settings = json.load(file)
-            if not (setting_users in settings and settings[setting_webdriver_url] and setting_webhook in settings):
-                raise Exception(f"settings are missing, please edit {filename_settings}")
-            if setting_random_time in settings:
-                global random_time
-                random_time = settings[setting_random_time]
+        settings = load_settings()
         for user in settings[setting_users]:
             if settings[setting_base64]:
                 user[setting_password] = b64decode(user[setting_password]).decode()
@@ -189,15 +210,8 @@ def main():
     except WebDriverException as wde:
         print(f"web driver exception:\n{wde}")
     except FileNotFoundError:
-        print(f"file not found: {filename_settings}, please provide settings")
-        with open(filename_settings, "w") as file:
-            json.dump({setting_users: [{setting_username: "",
-                                        setting_password: ""}],
-                       setting_webdriver_url: "http://127.0.0.1:4444/wd/hub",
-                       setting_random_time: random_time,
-                       setting_webhook: {setting_webhook_url: "",
-                                         setting_webhook_name: "",
-                                         setting_webhook_avatar: ""}}, file)
+        create_settings()
+        print(f"please provide settings in {filename_settings}")
     finally:
         if driver:
             driver.close()
