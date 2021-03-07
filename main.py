@@ -20,6 +20,7 @@ setting_webhook = "discord_webhook"
 setting_webhook_url = "url"
 setting_webhook_name = "name"
 setting_webhook_avatar = "avatar_url"
+setting_base64 = "pw_base64"
 
 filename_data = "data_{}.json"
 filename_settings = "settings.json"
@@ -38,7 +39,7 @@ def login(driver: webdriver.Remote, user: dict):
         if element_type == "text":
             input_element.send_keys(user[setting_username])
         elif element_type == "password":
-            input_element.send_keys(b64decode(user[setting_password]).decode())
+            input_element.send_keys(user[setting_password])
     submit_button = driver.find_element_by_class_name("submit")
     time.sleep(random() * random_time)
     submit_button.click()
@@ -62,18 +63,14 @@ def logged_in(driver: webdriver.Remote) -> bool:
 
 
 def go_to_grades(driver: webdriver.Remote):
-    # print(driver.current_url)
     selector = "#makronavigation > ul > li:nth-child(2) > a"
     driver.find_element_by_css_selector(selector).click()
-    # print(driver.current_url)
     time.sleep(random() * random_time)
     selector = "#wrapper > div.divcontent > div.content_max_portal_qis > div > form > div > ul > li:nth-child(5) > a"
     driver.find_element_by_css_selector(selector).click()
-    # print(driver.current_url)
     time.sleep(random() * random_time)
     selector = "#wrapper > div.divcontent > div.content > form > ul > li > a:nth-child(3)"
     driver.find_element_by_css_selector(selector).click()
-    # print(driver.current_url)
     time.sleep(random() * random_time)
 
 
@@ -109,7 +106,6 @@ def load_grades(username: str) -> list:
     try:
         with open(filename_data.format(username), "r") as file:
             grades = json.load(file)
-            # print(f"loaded: {len(grades)} entries")
             return grades
     except FileNotFoundError:
         print("file not found")
@@ -153,6 +149,8 @@ def main():
                 global random_time
                 random_time = settings[setting_random_time]
         for user in settings[setting_users]:
+            if settings[setting_base64]:
+                user[setting_password] = b64decode(user[setting_password]).decode()
             grades = load_grades(user[setting_username])
             driver = webdriver.Remote(settings[setting_webdriver_url], DesiredCapabilities.CHROME)
             driver.implicitly_wait(1)
