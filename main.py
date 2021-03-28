@@ -128,14 +128,15 @@ def new_entries(old: list, new: list) -> list:
 
 
 def handle_diff(entries: list, settings: dict, username: str = None, discord_id: str = None,
-                include_grades: bool = False):
+                include_grades: bool = False, webhook_settings: dict = None):
     if not entries:
         return
     text_list = [f"**{entry['text']}**{': {}'.format(entry['grade']) if include_grades and entry['grade'] else ''}"
                  for entry in entries]
     text = "Updates:\n{}".format(',\n'.join(text_list))
     mention = f"<@{discord_id}>" if discord_id else None
-    webhook_settings = settings[setting_webhook]
+    if not webhook_settings:
+        webhook_settings = settings[setting_webhook]
     webhook = DiscordWebhook(webhook_settings)
     webhook.webhook_post_embed("POS", text, url="https://pos.hawk-hhg.de", footer=username, content=mention)
 
@@ -180,6 +181,8 @@ def main():
                     user[setting_id] = user[setting_username]
                 if setting_include_grades not in user:
                     user[setting_include_grades] = False
+                if setting_webhook not in user:
+                    user[setting_webhook] = settings[setting_webhook]
                 grades = load_grades(user[setting_id])
                 driver = webdriver.Remote(settings[setting_webdriver_url], DesiredCapabilities.CHROME)
                 driver.implicitly_wait(1)
@@ -196,7 +199,8 @@ def main():
                     if grades:
                         handle_diff(grades_diff, settings, user[setting_username],
                                     discord_id=user[setting_discord_id] if setting_discord_id in user else None,
-                                    include_grades=user[setting_include_grades])
+                                    include_grades=user[setting_include_grades],
+                                    webhook_settings=user[setting_webhook])
                     else:
                         print("first run, not handling new entries")
                     print(f"entries: loaded {len(grades)}, saved {len(grades_new)}, {len(grades_diff)} changes")
