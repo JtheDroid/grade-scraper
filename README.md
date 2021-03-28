@@ -15,7 +15,7 @@
     - **discord_webhook.url**: [Discord Webhook URL](#get-discord-webhook-id) (`https://discord.com/api/webhooks/...`)
     - **remote_webdriver_url**: URL for remote webdriver, default value works with the docker container running locally
     - Optional:
-        - **users**: **discord_id**: Discord User ID to be mentioned
+        - **users**: **discord_id**: Discord User ID to be mentioned, *everyone* or *here*
         - **discord_webhook**
             - **name**: Override name in Discord message
             - **avatar_url**: Override icon in Discord message

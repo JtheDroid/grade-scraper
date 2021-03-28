@@ -134,7 +134,7 @@ def handle_diff(entries: list, settings: dict, username: str = None, discord_id:
     text_list = [f"**{entry['text']}**{': {}'.format(entry['grade']) if include_grades and entry['grade'] else ''}"
                  for entry in entries]
     text = "Updates:\n{}".format(',\n'.join(text_list))
-    mention = f"<@{discord_id}>" if discord_id else None
+    mention = None if not discord_id else f"@{discord_id}" if discord_id in ["everyone", "here"] else f"<@{discord_id}>"
     if not webhook_settings:
         webhook_settings = settings[setting_webhook]
     webhook = DiscordWebhook(webhook_settings)
