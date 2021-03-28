@@ -21,6 +21,8 @@ setting_webhook_url = "url"
 setting_webhook_name = "name"
 setting_webhook_avatar = "avatar_url"
 setting_base64 = "pw_base64"
+setting_include_grades = "include_grades"
+setting_id = "id"
 
 filename_data = "data_{}.json"
 filename_settings = "settings.json"
@@ -102,9 +104,9 @@ def get_grades(driver: webdriver.Remote) -> list:
     return entries
 
 
-def load_grades(username: str) -> list:
+def load_grades(user_id: str) -> list:
     try:
-        with open(filename_data.format(username), "r") as file:
+        with open(filename_data.format(user_id), "r") as file:
             grades = json.load(file)
             return grades
     except FileNotFoundError:
@@ -112,9 +114,9 @@ def load_grades(username: str) -> list:
     return []
 
 
-def save_grades(grades, username: str):
+def save_grades(grades, user_id: str):
     try:
-        with open(filename_data.format(username), "w") as file:
+        with open(filename_data.format(user_id), "w") as file:
             json.dump(grades, fp=file, separators=(',', ':'))
             return grades
     except IOError:
@@ -125,10 +127,12 @@ def new_entries(old: list, new: list) -> list:
     return [entry for entry in new if entry not in old]
 
 
-def handle_diff(entries: list, settings: dict, username: str = None, discord_id: str = None):
+def handle_diff(entries: list, settings: dict, username: str = None, discord_id: str = None,
+                include_grades: bool = False):
     if not entries:
         return
-    text_list = [f"**{entry['text']}**" for entry in entries]
+    text_list = [f"**{entry['text']}**{': {}'.format(entry['grade']) if include_grades and entry['grade'] else ''}"
+                 for entry in entries]
     text = "Updates:\n{}".format(',\n'.join(text_list))
     mention = f"<@{discord_id}>" if discord_id else None
     webhook_settings = settings[setting_webhook]
@@ -172,7 +176,11 @@ def main():
             try:
                 if settings[setting_base64]:
                     user[setting_password] = b64decode(user[setting_password]).decode()
-                grades = load_grades(user[setting_username])
+                if setting_id not in user:
+                    user[setting_id] = user[setting_username]
+                if setting_include_grades not in user:
+                    user[setting_include_grades] = False
+                grades = load_grades(user[setting_id])
                 driver = webdriver.Remote(settings[setting_webdriver_url], DesiredCapabilities.CHROME)
                 driver.implicitly_wait(1)
                 load_page(driver)
@@ -184,10 +192,11 @@ def main():
                     go_to_grades(driver)
                     grades_new = get_grades(driver)
                     grades_diff = new_entries(grades, grades_new)
-                    save_grades(grades_new, user[setting_username])
+                    save_grades(grades_new, user[setting_id])
                     if grades:
                         handle_diff(grades_diff, settings, user[setting_username],
-                                    user[setting_discord_id] if setting_discord_id in user else None)
+                                    discord_id=user[setting_discord_id] if setting_discord_id in user else None,
+                                    include_grades=user[setting_include_grades])
                     else:
                         print("first run, not handling new entries")
                     print(f"entries: loaded {len(grades)}, saved {len(grades_new)}, {len(grades_diff)} changes")
