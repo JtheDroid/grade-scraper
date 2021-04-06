@@ -127,10 +127,14 @@ def new_entries(old: list, new: list) -> list:
     return [entry for entry in new if entry not in old]
 
 
-def handle_diff(entries: list, settings: dict, username: str = None, discord_id: str = None,
-                include_grades: bool = False, webhook_settings: dict = None):
+def handle_diff(entries: list, settings: dict, user: dict):
     if not entries:
         return
+    username = user[setting_username]
+    discord_id = user[setting_discord_id] if setting_discord_id in user else None
+    include_grades = user[setting_include_grades]
+    webhook_settings = user[setting_webhook]
+
     text_list = [f"**{entry['text']}**{': {}'.format(entry['grade']) if include_grades and entry['grade'] else ''}"
                  for entry in entries]
     text = "Updates:\n{}".format(',\n'.join(text_list))
@@ -197,10 +201,7 @@ def main():
                     grades_diff = new_entries(grades, grades_new)
                     save_grades(grades_new, user[setting_id])
                     if grades:
-                        handle_diff(grades_diff, settings, user[setting_username],
-                                    discord_id=user[setting_discord_id] if setting_discord_id in user else None,
-                                    include_grades=user[setting_include_grades],
-                                    webhook_settings=user[setting_webhook])
+                        handle_diff(grades_diff, settings, user)
                     else:
                         print("first run, not handling new entries")
                     print(f"entries: loaded {len(grades)}, saved {len(grades_new)}, {len(grades_diff)} changes")
