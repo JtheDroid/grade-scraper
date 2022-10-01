@@ -1,14 +1,13 @@
-from selenium import webdriver
-from selenium.common.exceptions import WebDriverException
-from selenium.webdriver.remote.webelement import WebElement
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-import time
-from datetime import datetime
 import json
-from random import random
+import time
 from base64 import b64decode
+from datetime import datetime
+from random import random
 
 from discord_webhook import DiscordWebhook
+from selenium import webdriver
+from selenium.common.exceptions import WebDriverException
+from selenium.webdriver.remote.webelement import WebElement, By
 
 setting_users = "users"
 setting_username = "username"
@@ -35,20 +34,21 @@ def load_page(driver: webdriver.Remote):
 
 
 def login(driver: webdriver.Remote, user: dict):
-    input_elements = driver.find_elements_by_class_name("input_login")
+    input_elements = driver.find_elements(by=By.CLASS_NAME, value="input_login")
     for input_element in input_elements:
         element_type = input_element.get_attribute("type")
         if element_type == "text":
             input_element.send_keys(user[setting_username])
         elif element_type == "password":
             input_element.send_keys(user[setting_password])
-    submit_button = driver.find_element_by_class_name("submit")
+    submit_button = driver.find_element(by=By.CLASS_NAME, value="submit")
     time.sleep(random() * random_time)
     submit_button.click()
 
 
 def logout(driver: webdriver.Remote):
-    elements = driver.find_element_by_class_name("divloginstatus").find_elements_by_class_name("links3")
+    login_div = driver.find_element(by=By.CLASS_NAME, value="divloginstatus")
+    elements = login_div.find_elements(by=By.CLASS_NAME, value="links3")
     for element in elements:
         if element.tag_name == "a" and element.get_attribute("accesskey") == "l":
             time.sleep(random() * random_time)
@@ -57,8 +57,8 @@ def logout(driver: webdriver.Remote):
 
 
 def logged_in(driver: webdriver.Remote) -> bool:
-    element = driver.find_element_by_class_name("divloginstatus")
-    elements = element.find_elements_by_class_name("links3")
+    element = driver.find_element(by=By.CLASS_NAME, value="divloginstatus")
+    elements = element.find_elements(by=By.CLASS_NAME, value="links3")
     is_logged_in = len(elements) > 5
     print(f"logged {'in' if is_logged_in else 'out'}")
     return is_logged_in
@@ -66,18 +66,18 @@ def logged_in(driver: webdriver.Remote) -> bool:
 
 def go_to_grades(driver: webdriver.Remote):
     selector = "#makronavigation > ul > li:nth-child(2) > a"
-    driver.find_element_by_css_selector(selector).click()
+    driver.find_element(by=By.CSS_SELECTOR, value=selector).click()
     time.sleep(random() * random_time)
     selector = "#wrapper > div.divcontent > div.content_max_portal_qis > div > form > div > ul > li:nth-child(5) > a"
-    driver.find_element_by_css_selector(selector).click()
+    driver.find_element(by=By.CSS_SELECTOR, value=selector).click()
     time.sleep(random() * random_time)
     selector = "#wrapper > div.divcontent > div.content > form > ul > li > a:nth-child(3)"
-    driver.find_element_by_css_selector(selector).click()
+    driver.find_element(by=By.CSS_SELECTOR, value=selector).click()
     time.sleep(random() * random_time)
 
 
 def row_to_data(row: WebElement) -> dict:
-    cols = row.find_elements_by_tag_name("td")
+    cols = row.find_elements(by=By.TAG_NAME, value="td")
     if len(cols) == 0:
         return {}
     grade = cols[3].text.strip()
@@ -97,8 +97,8 @@ def row_to_data(row: WebElement) -> dict:
 
 
 def get_grades(driver: webdriver.Remote) -> list:
-    tbody = driver.find_elements_by_tag_name("tbody")[1]
-    rows = tbody.find_elements_by_tag_name("tr")
+    tbody = driver.find_elements(by=By.TAG_NAME, value="tbody")[1]
+    rows = tbody.find_elements(by=By.TAG_NAME, value="tr")
     entries = [row_to_data(row) for row in rows]
     entries = [entry for entry in entries if entry]
     return entries
@@ -188,7 +188,8 @@ def main():
                 if setting_webhook not in user:
                     user[setting_webhook] = settings[setting_webhook]
                 grades = load_grades(user[setting_id])
-                driver = webdriver.Remote(settings[setting_webdriver_url], DesiredCapabilities.CHROME)
+                options = webdriver.ChromeOptions()
+                driver = webdriver.Remote(settings[setting_webdriver_url], options=options)
                 driver.implicitly_wait(1)
                 load_page(driver)
                 if not logged_in(driver):
