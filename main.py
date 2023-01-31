@@ -80,20 +80,30 @@ def row_to_data(row: WebElement) -> dict:
     cols = row.find_elements(by=By.TAG_NAME, value="td")
     if len(cols) == 0:
         return {}
-    grade = cols[3].text.strip()
-    nr = int(cols[0].text.strip())
-    data = {
-        "nr": nr,
-        "text": cols[1].text.strip(),
-        "semester": cols[2].text.strip(),
-        "grade": grade.replace(",", "."),
-        "status": cols[4].text.strip(),
-        "credits": cols[5].text.strip(),
-        "note": cols[6].text.strip(),
-        "try": cols[7].text.strip(),
-        "date": datetime.strptime(cols[8].text.strip(), "%d.%m.%Y").date().isoformat()
-    }
-    return data
+    try:
+        grade = cols[3].text.strip()
+        nr = int(cols[0].text.strip())
+        date_text = cols[8].text.strip()
+        date = None
+        try:
+            if len(date_text) > 0:
+                date = datetime.strptime(date_text, "%d.%m.%Y").date().isoformat()
+        finally:
+            pass
+        data = {
+            "nr": nr,
+            "text": cols[1].text.strip(),
+            "semester": cols[2].text.strip(),
+            "grade": grade.replace(",", "."),
+            "status": cols[4].text.strip(),
+            "credits": cols[5].text.strip(),
+            "note": cols[6].text.strip(),
+            "try": cols[7].text.strip(),
+            "date": date
+        }
+        return data
+    except Exception as e:
+        print(f"Error extracting data from row:\n\n{e}")
 
 
 def get_grades(driver: webdriver.Remote) -> list:
