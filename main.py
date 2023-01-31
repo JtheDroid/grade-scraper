@@ -127,7 +127,7 @@ def load_grades(user_id: str) -> list:
 def save_grades(grades, user_id: str):
     try:
         with open(filename_data.format(user_id), "w") as file:
-            json.dump(grades, fp=file, separators=(',', ':'))
+            json.dump(grades, fp=file, separators=(',', ':'), indent=1)
             return grades
     except IOError:
         print("error saving")
