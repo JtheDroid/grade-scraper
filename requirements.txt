@@ -1,4 +1,6 @@
-selenium==4.8.0
+selenium~=4.8.0
 webdriver-manager==3.8.5
 requests==2.28.2
 -e git+https://github.com/JtheDroid/discord-webhook.git@main#egg=discord-webhook
+
+plyer~=2.1.0

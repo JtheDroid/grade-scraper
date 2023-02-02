@@ -31,6 +31,7 @@ setting_webhook_avatar = "avatar_url"
 setting_base64 = "pw_base64"
 setting_include_grades = "include_grades"
 setting_id = "id"
+setting_local_notification = "local_notification"
 
 webdriver_type_remote = "remote"
 webdriver_type_local_chrome = "chrome-local"
@@ -165,8 +166,19 @@ def handle_diff(entries: list, settings: dict, user: dict):
     mention = None if not discord_id else f"@{discord_id}" if discord_id in ["everyone", "here"] else f"<@{discord_id}>"
     if not webhook_settings:
         webhook_settings = settings[setting_webhook]
-    webhook = DiscordWebhook(webhook_settings)
-    webhook.webhook_post_embed("POS", text, url="https://pos.hawk-hhg.de", footer=username, content=mention)
+    if webhook_settings['url']:
+        webhook = DiscordWebhook(webhook_settings)
+        webhook.webhook_post_embed("POS", text, url="https://pos.hawk.de", footer=username, content=mention)
+    if settings[setting_local_notification]:
+        from plyer import notification
+        text_list = [f"{entry['text']}{': {}'.format(entry['grade']) if include_grades and entry['grade'] else ''}"
+                     for entry in entries]
+        text = "Updates:\n{}".format(',\n'.join(text_list))
+        notification.notify(
+            title="HAWK POS",
+            message=text,
+            timeout=10
+        )
 
 
 def load_settings() -> dict:
@@ -182,6 +194,8 @@ def load_settings() -> dict:
             settings[setting_base64] = False
         if setting_webdriver_type not in settings:
             settings[setting_webdriver_type] = webdriver_type_remote
+        if setting_local_notification not in settings:
+            settings[setting_local_notification] = False
         return settings
 
 
@@ -192,12 +206,13 @@ def create_settings():
                              setting_password: "",
                              setting_discord_id: ""}],
             setting_webdriver_url: "http://127.0.0.1:4444/wd/hub",
+            setting_webdriver_type: webdriver_type_remote,
             setting_random_time: random_time,
             setting_webhook: {setting_webhook_url: "",
                               setting_webhook_name: "",
                               setting_webhook_avatar: ""},
             setting_base64: False,
-            setting_webdriver_type: webdriver_type_remote
+            setting_local_notification: True
         }, fp=file, indent=2)
 
 
