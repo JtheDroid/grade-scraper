@@ -29,7 +29,7 @@ random_time = 1
 
 
 def load_page(driver: webdriver.Remote):
-    driver.get("https://pos.hawk-hhg.de/")
+    driver.get("https://pos.hawk.de/")
     time.sleep(random() * random_time)
 
 
