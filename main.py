@@ -199,21 +199,25 @@ def load_settings() -> dict:
         return settings
 
 
-def create_settings():
+def save_settings(settings: dict):
     with open(filename_settings, "w") as file:
-        json.dump({
-            setting_users: [{setting_username: "",
-                             setting_password: "",
-                             setting_discord_id: ""}],
-            setting_webdriver_url: "http://127.0.0.1:4444/wd/hub",
-            setting_webdriver_type: webdriver_type_remote,
-            setting_random_time: random_time,
-            setting_webhook: {setting_webhook_url: "",
-                              setting_webhook_name: "",
-                              setting_webhook_avatar: ""},
-            setting_base64: False,
-            setting_local_notification: True
-        }, fp=file, indent=2)
+        json.dump(settings, fp=file, indent=2)
+
+
+def create_settings():
+    save_settings({
+        setting_users: [{setting_username: "",
+                         setting_password: "",
+                         setting_discord_id: ""}],
+        setting_webdriver_url: "http://127.0.0.1:4444/wd/hub",
+        setting_webdriver_type: webdriver_type_remote,
+        setting_random_time: random_time,
+        setting_webhook: {setting_webhook_url: "",
+                          setting_webhook_name: "",
+                          setting_webhook_avatar: ""},
+        setting_base64: False,
+        setting_local_notification: True
+    })
 
 
 def main():
