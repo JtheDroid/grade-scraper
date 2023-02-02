@@ -10,6 +10,10 @@ from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.remote.webelement import WebElement, By
+from selenium.webdriver.edge.service import Service as EdgeService
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
+from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.firefox import GeckoDriverManager
 
 setting_users = "users"
 setting_username = "username"
@@ -31,6 +35,7 @@ setting_id = "id"
 webdriver_type_remote = "remote"
 webdriver_type_local_chrome = "chrome-local"
 webdriver_type_local_firefox = "firefox-local"
+webdriver_type_local_edge = "edge-local"
 
 filename_data = "data_{}.json"
 filename_settings = "settings.json"
@@ -168,7 +173,7 @@ def load_settings() -> dict:
     with open(filename_settings, "r") as file:
         settings = json.load(file)
         if not (setting_users in settings and setting_webhook in settings and
-                (setting_webdriver_url in settings or setting_webdriver_binary in settings)):
+                (setting_webdriver_url in settings or setting_webdriver_type in settings)):
             raise Exception(f"settings are missing, please edit {filename_settings}")
         if setting_random_time in settings:
             global random_time
@@ -221,9 +226,11 @@ def main():
                     if setting_browser_binary in settings:
                         options.binary_location = settings[setting_browser_binary]
                     service_options = {}
-                    if setting_browser_binary in settings:
+                    if setting_webdriver_binary in settings:
                         service_options['executable_path'] = settings[setting_webdriver_binary]
-                    service = FirefoxService(**service_options)
+                        service = FirefoxService(**service_options)
+                    else:
+                        service = FirefoxService(GeckoDriverManager().install())
                     driver = webdriver.Firefox(
                         service=service,
                         options=options
@@ -234,10 +241,20 @@ def main():
                     if setting_browser_binary in settings:
                         options.binary_location = settings[setting_browser_binary]
                     service_options = {}
-                    if setting_browser_binary in settings:
+                    if setting_webdriver_binary in settings:
                         service_options['executable_path'] = settings[setting_webdriver_binary]
-                    service = ChromeService(**service_options)
+                        service = ChromeService(**service_options)
+                    else:
+                        service = ChromeService(ChromeDriverManager().install())
                     driver = webdriver.Chrome(
+                        service=service,
+                        options=options
+                    )
+                elif settings[setting_webdriver_type] == webdriver_type_local_edge:
+                    options = webdriver.EdgeOptions()
+                    options.add_argument("--headless")
+                    service = EdgeService(EdgeChromiumDriverManager().install())
+                    driver = webdriver.Edge(
                         service=service,
                         options=options
                     )
