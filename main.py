@@ -7,13 +7,18 @@ from random import random
 from discord_webhook import DiscordWebhook
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.remote.webelement import WebElement, By
 
 setting_users = "users"
 setting_username = "username"
 setting_password = "password"
 setting_discord_id = "discord_id"
+setting_webdriver_type = "webdriver_type"
 setting_webdriver_url = "remote_webdriver_url"
+setting_browser_binary = "browser_binary"
+setting_webdriver_binary = "webdriver_binary"
 setting_random_time = "random_wait_time"
 setting_webhook = "discord_webhook"
 setting_webhook_url = "url"
@@ -22,6 +27,10 @@ setting_webhook_avatar = "avatar_url"
 setting_base64 = "pw_base64"
 setting_include_grades = "include_grades"
 setting_id = "id"
+
+webdriver_type_remote = "remote"
+webdriver_type_local_chrome = "chrome-local"
+webdriver_type_local_firefox = "firefox-local"
 
 filename_data = "data_{}.json"
 filename_settings = "settings.json"
@@ -158,13 +167,16 @@ def handle_diff(entries: list, settings: dict, user: dict):
 def load_settings() -> dict:
     with open(filename_settings, "r") as file:
         settings = json.load(file)
-        if not (setting_users in settings and settings[setting_webdriver_url] and setting_webhook in settings):
+        if not (setting_users in settings and setting_webhook in settings and
+                (setting_webdriver_url in settings or setting_webdriver_binary in settings)):
             raise Exception(f"settings are missing, please edit {filename_settings}")
         if setting_random_time in settings:
             global random_time
             random_time = settings[setting_random_time]
         if setting_base64 not in settings:
             settings[setting_base64] = False
+        if setting_webdriver_type not in settings:
+            settings[setting_webdriver_type] = webdriver_type_remote
         return settings
 
 
@@ -179,7 +191,8 @@ def create_settings():
             setting_webhook: {setting_webhook_url: "",
                               setting_webhook_name: "",
                               setting_webhook_avatar: ""},
-            setting_base64: False
+            setting_base64: False,
+            setting_webdriver_type: webdriver_type_remote
         }, fp=file, indent=2)
 
 
@@ -198,8 +211,36 @@ def main():
                 if setting_webhook not in user:
                     user[setting_webhook] = settings[setting_webhook]
                 grades = load_grades(user[setting_id])
-                options = webdriver.ChromeOptions()
-                driver = webdriver.Remote(settings[setting_webdriver_url], options=options)
+                driver = None
+                if settings[setting_webdriver_type] == webdriver_type_remote:
+                    options = webdriver.ChromeOptions()
+                    driver = webdriver.Remote(settings[setting_webdriver_url], options=options)
+                elif settings[setting_webdriver_type] == webdriver_type_local_firefox:
+                    options = webdriver.FirefoxOptions()
+                    options.add_argument("-headless")
+                    if setting_browser_binary in settings:
+                        options.binary_location = settings[setting_browser_binary]
+                    service_options = {}
+                    if setting_browser_binary in settings:
+                        service_options['executable_path'] = settings[setting_webdriver_binary]
+                    service = FirefoxService(**service_options)
+                    driver = webdriver.Firefox(
+                        service=service,
+                        options=options
+                    )
+                elif settings[setting_webdriver_type] == webdriver_type_local_chrome:
+                    options = webdriver.ChromeOptions()
+                    options.add_argument("--headless")
+                    if setting_browser_binary in settings:
+                        options.binary_location = settings[setting_browser_binary]
+                    service_options = {}
+                    if setting_browser_binary in settings:
+                        service_options['executable_path'] = settings[setting_webdriver_binary]
+                    service = ChromeService(**service_options)
+                    driver = webdriver.Chrome(
+                        service=service,
+                        options=options
+                    )
                 driver.implicitly_wait(1)
                 load_page(driver)
                 if not logged_in(driver):
