@@ -1,5 +1,15 @@
 # grade-scraper
 
+Check grades and notify on changes
+
+## Usage on Windows
+- Download the executable from [releases](https://github.com/JtheDroid/grade-scraper/releases)
+- Run it
+- Enter username and password, select an installed browser (Chrome/Firefox/Edge)
+- Click **Start**
+
+Grades will be checked every 15 minutes, a notification will be displayed on changes
+
 ## Setup
 
 - Clone repo
