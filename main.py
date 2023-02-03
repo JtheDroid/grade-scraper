@@ -42,6 +42,17 @@ filename_data = "data_{}.json"
 filename_settings = "settings.json"
 random_time = 1
 
+webdriver_setting_mapping = {
+    "Chrome": webdriver_type_local_chrome,
+    "Edge": webdriver_type_local_edge,
+    "Firefox": webdriver_type_local_firefox,
+    "Remote": webdriver_type_remote
+}
+
+
+class SettingsMissingException(Exception):
+    pass
+
 
 def load_page(driver: webdriver.Remote):
     driver.get("https://pos.hawk.de/")
@@ -186,7 +197,7 @@ def load_settings() -> dict:
         settings = json.load(file)
         if not (setting_users in settings and setting_webhook in settings and
                 (setting_webdriver_url in settings or setting_webdriver_type in settings)):
-            raise Exception(f"settings are missing, please edit {filename_settings}")
+            raise SettingsMissingException(f"settings are missing, please edit {filename_settings}")
         if setting_random_time in settings:
             global random_time
             random_time = settings[setting_random_time]
@@ -204,20 +215,24 @@ def save_settings(settings: dict):
         json.dump(settings, fp=file, indent=2)
 
 
-def create_settings():
-    save_settings({
+def default_settings():
+    return {
         setting_users: [{setting_username: "",
                          setting_password: "",
                          setting_discord_id: ""}],
         setting_webdriver_url: "http://127.0.0.1:4444/wd/hub",
-        setting_webdriver_type: webdriver_type_remote,
+        setting_webdriver_type: webdriver_type_local_chrome,
         setting_random_time: random_time,
         setting_webhook: {setting_webhook_url: "",
                           setting_webhook_name: "",
                           setting_webhook_avatar: ""},
         setting_base64: False,
         setting_local_notification: True
-    })
+    }
+
+
+def create_settings():
+    save_settings(default_settings())
 
 
 def main():
