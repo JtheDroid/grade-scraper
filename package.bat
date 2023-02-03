@@ -1,0 +1,1 @@
+pyinstaller --onefile --windowed --add-data scuffed-icon.png;. grade-scraper-ui.py
