@@ -49,6 +49,8 @@ webdriver_setting_mapping = {
     "Remote": webdriver_type_remote
 }
 
+log = print
+
 
 class SettingsMissingException(Exception):
     pass
@@ -86,7 +88,7 @@ def logged_in(driver: webdriver.Remote) -> bool:
     element = driver.find_element(by=By.CLASS_NAME, value="divloginstatus")
     elements = element.find_elements(by=By.CLASS_NAME, value="links3")
     is_logged_in = len(elements) > 5
-    print(f"logged {'in' if is_logged_in else 'out'}")
+    log(f"logged {'in' if is_logged_in else 'out'}")
     return is_logged_in
 
 
@@ -129,7 +131,7 @@ def row_to_data(row: WebElement) -> dict:
         }
         return data
     except Exception as e:
-        print(f"Error extracting data from row:\n\n{e}")
+        log(f"Error extracting data from row:\n\n{e}")
 
 
 def get_grades(driver: webdriver.Remote) -> list:
@@ -146,7 +148,7 @@ def load_grades(user_id: str) -> list:
             grades = json.load(file)
             return grades
     except FileNotFoundError:
-        print("file not found")
+        log("file not found")
     return []
 
 
@@ -156,7 +158,7 @@ def save_grades(grades, user_id: str):
             json.dump(grades, fp=file, separators=(',', ':'), indent=1)
             return grades
     except IOError:
-        print("error saving")
+        log("error saving")
 
 
 def new_entries(old: list, new: list) -> list:
@@ -310,8 +312,9 @@ def main(notify=notify_plyer):
                     if grades:
                         handle_diff(grades_diff, settings, user, notify)
                     else:
-                        print("first run, not handling new entries")
-                    print(f"entries: loaded {len(grades)}, saved {len(grades_new)}, {len(grades_diff)} changes")
+                        log("first run, not handling new entries")
+                    log(f"entries: loaded {len(grades)}, saved {len(grades_new)}, {len(grades_diff)} changes")
+                    time.sleep(3)
                     logout(driver)
                     logout_tries = 1
                     while logout_tries <= 5 and logged_in(driver):
@@ -319,14 +322,14 @@ def main(notify=notify_plyer):
                         logout_tries += 1
                         time.sleep(2)
                 else:
-                    print("couldn't log in")
+                    log("couldn't log in")
                 logged_in(driver)
                 driver.delete_all_cookies()
                 driver.quit()
                 driver = None
                 time.sleep(2)
             except WebDriverException as wde:
-                print(f"web driver exception:\n{wde}")
+                log(f"web driver exception:\n{wde}")
             finally:
                 if driver:
                     try:
@@ -335,7 +338,7 @@ def main(notify=notify_plyer):
                         pass
     except FileNotFoundError:
         create_settings()
-        print(f"please provide settings in {filename_settings}")
+        log(f"please provide settings in {filename_settings}")
 
 
 if __name__ == '__main__':

@@ -8,6 +8,7 @@ from main import (
     main, load_settings, save_settings, default_settings, create_settings,
     webdriver_setting_mapping, setting_webdriver_type, setting_users, setting_username, setting_password
 )
+import main as main_file
 
 timer_period = 1000 * 60  # 1 min
 
@@ -73,6 +74,8 @@ class GradeScraperUI(wx.Frame):
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.status_text = wx.StaticText(pnl, label="")
         sizer.Add(self.status_text, wx.SizerFlags().Border(wx.ALL, 5))
+        self.status_text_2 = wx.StaticText(pnl, label="")
+        sizer.Add(self.status_text_2, wx.SizerFlags().Border(wx.ALL, 5))
 
         settings = None
         try:
@@ -175,6 +178,7 @@ class GradeScraperUI(wx.Frame):
     def done_scraping_callback(self, future):
         self.future = None
         self.status_text.SetLabel("Noten fertig abgerufen")
+        self.status_text_2.SetLabel("")
 
     def _timer_fired(self, _event=None):
         self.minutes_left -= 1
@@ -205,6 +209,7 @@ class MyApp(wx.App):
         frame = GradeScraperUI(None, -1, icon=wx.Icon(resource_path('scuffed-icon.png'), wx.BITMAP_TYPE_PNG))
         frame.Show(True)
         self.SetTopWindow(frame)
+        main_file.log = lambda text: frame.status_text_2.SetLabel(text)
 
         return True
 
