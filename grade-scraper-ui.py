@@ -153,6 +153,7 @@ class GradeScraperUI(wx.Frame):
         self.threadpool = None
         self.taskicon.Destroy()
         self.Destroy()
+        app.Destroy()
 
     def start(self, _event=None):
         self.scrape()
@@ -167,7 +168,7 @@ class GradeScraperUI(wx.Frame):
         self.start_btn.Enable()
 
     def scrape(self):
-        self.future = self.threadpool.submit(main)
+        self.future = self.threadpool.submit(main, notify=self.notify)
         self.future.add_done_callback(self.done_scraping_callback)
         self.status_text.SetLabel("Getting grades")
 
@@ -192,6 +193,11 @@ class GradeScraperUI(wx.Frame):
         settings[setting_users][0][setting_username] = self.text_username.GetValue()
         settings[setting_users][0][setting_password] = self.text_password.GetValue()
         save_settings(settings)
+
+    def notify(self, text):
+        msg = wx.adv.NotificationMessage("HAWK POS", message=text, parent=self, flags=wx.ICON_INFORMATION)
+        msg.UseTaskBarIcon(self.taskicon)
+        msg.Show()
 
 
 class MyApp(wx.App):

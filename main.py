@@ -163,7 +163,16 @@ def new_entries(old: list, new: list) -> list:
     return [entry for entry in new if entry not in old]
 
 
-def handle_diff(entries: list, settings: dict, user: dict):
+def notify_plyer(text):
+    from plyer import notification
+    notification.notify(
+        title="HAWK POS",
+        message=text,
+        timeout=10
+    )
+
+
+def handle_diff(entries: list, settings: dict, user: dict, notify=notify_plyer):
     if not entries:
         return
     username = user[setting_username]
@@ -181,15 +190,10 @@ def handle_diff(entries: list, settings: dict, user: dict):
         webhook = DiscordWebhook(webhook_settings)
         webhook.webhook_post_embed("POS", text, url="https://pos.hawk.de", footer=username, content=mention)
     if settings[setting_local_notification]:
-        from plyer import notification
         text_list = [f"{entry['text']}{': {}'.format(entry['grade']) if include_grades and entry['grade'] else ''}"
                      for entry in entries]
         text = "Updates:\n{}".format(',\n'.join(text_list))
-        notification.notify(
-            title="HAWK POS",
-            message=text,
-            timeout=10
-        )
+        notify(text)
 
 
 def load_settings() -> dict:
@@ -235,7 +239,7 @@ def create_settings():
     save_settings(default_settings())
 
 
-def main():
+def main(notify=notify_plyer):
     try:
         settings = load_settings()
         for user in settings[setting_users]:
@@ -304,7 +308,7 @@ def main():
                     grades_diff = new_entries(grades, grades_new)
                     save_grades(grades_new, user[setting_id])
                     if grades:
-                        handle_diff(grades_diff, settings, user)
+                        handle_diff(grades_diff, settings, user, notify)
                     else:
                         print("first run, not handling new entries")
                     print(f"entries: loaded {len(grades)}, saved {len(grades_new)}, {len(grades_diff)} changes")
