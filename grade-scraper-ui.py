@@ -37,9 +37,9 @@ class MyTaskBarIcon(TaskBarIcon):
 
     def CreatePopupMenu(self):
         menu = wx.Menu()
-        menu.Append(1, 'Show')
-        menu.Append(2, 'Hide')
-        menu.Append(3, 'Close')
+        menu.Append(1, 'Zeigen')
+        menu.Append(2, 'Verstecken')
+        menu.Append(3, 'Schließen')
 
         return menu
 
@@ -71,7 +71,7 @@ class GradeScraperUI(wx.Frame):
         self.minutes_left = self.scrape_period_minutes
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        self.status_text = wx.StaticText(pnl, label="Click 'Start' to start")
+        self.status_text = wx.StaticText(pnl, label="")
         sizer.Add(self.status_text, wx.SizerFlags().Border(wx.ALL, 5))
 
         settings = None
@@ -115,14 +115,14 @@ class GradeScraperUI(wx.Frame):
                 rb.SetValue(True)
                 break
 
-        save_btn = wx.Button(pnl, label="Save")
+        save_btn = wx.Button(pnl, label="Speichern")
         settings_grid.Add(save_btn)
         self.Bind(wx.EVT_BUTTON, self.save_settings, save_btn)
 
         settings_sizer.Add(settings_grid, wx.SizerFlags().Expand())
         sizer.Add(settings_sizer, wx.SizerFlags().Expand().Border(wx.ALL, 5))
 
-        close_btn = wx.Button(pnl, label="Close")
+        close_btn = wx.Button(pnl, label="Schließen")
         self.Bind(wx.EVT_BUTTON, self.exit, close_btn)
         sizer.AddStretchSpacer()
         btn_row = wx.BoxSizer(wx.HORIZONTAL)
@@ -170,11 +170,11 @@ class GradeScraperUI(wx.Frame):
     def scrape(self):
         self.future = self.threadpool.submit(main, notify=self.notify)
         self.future.add_done_callback(self.done_scraping_callback)
-        self.status_text.SetLabel("Getting grades")
+        self.status_text.SetLabel("Noten werden abgerufen")
 
     def done_scraping_callback(self, future):
         self.future = None
-        self.status_text.SetLabel("Done getting grades")
+        self.status_text.SetLabel("Noten fertig abgerufen")
 
     def _timer_fired(self, _event=None):
         self.minutes_left -= 1
@@ -182,7 +182,7 @@ class GradeScraperUI(wx.Frame):
             self.scrape()
             self.minutes_left = self.scrape_period_minutes
         elif self.future is None:
-            self.status_text.SetLabel(f"{self.minutes_left} minutes until getting grades")
+            self.status_text.SetLabel(f"Nächstes Abrufen in {self.minutes_left} Minuten")
 
     def save_settings(self, _event=None):
         settings = load_settings()
